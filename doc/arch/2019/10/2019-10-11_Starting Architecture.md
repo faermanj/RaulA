@@ -31,6 +31,7 @@ Python is a simple language with a sane developer experience. Also, most manufat
 * [Grove Pi](https://www.seeedstudio.com/GrovePi-p-2241.html)
 * [TF Mini LiDAR Sensor](https://www.seeedstudio.com/Seeedstudio-Grove-TF-Mini-LiDAR.html)
 * [VL53L0X ToF](https://www.seeedstudio.com/Grove-Time-of-Flight-Distance-Sensor-VL53L0-p-3086.html)
+* [IMU 10DOF](http://wiki.seeedstudio.com/Grove-IMU_10DOF/)
 * [Vibration Motor](https://www.seeedstudio.com/Grove-Vibration-Motor-p-839.html)
 * [Night Camera](https://www.amazon.es/gp/product/B0748GQ32H/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 * [Battery Pack](https://www.amazon.es/gp/product/B07KWTS638/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)

@@ -1,8 +1,5 @@
 # RaulA
-A safety bottle for cyclists
-# Raula
-
-Raula is a "safety bottle" for cyclists that is accessible and easy to build. The goal is to detect, prevent, record and alert on cycling incidents. Initially this will target collisions and falls, but the goal is to provide an open platform for innovation on cyclism safety.
+The goal is to detect, prevent, record and alert on cycling incidents. Initially this will target collisions and falls, but the goal is to provide an open platform for innovation on cyclism safety.
 
 # Collaboration is welcome!
 
