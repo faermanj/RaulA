@@ -4,20 +4,17 @@ import time
 from pathlib import Path
 
 class Camera(Sensor):
-    data = ""
+    camera = None
     
-    def __init__(self,config = {}):
-        super().__init__(config)
-        print("Camera Constructor")
+    def __init__(self,agent,name):
         camera = PiCamera()
         camera.resolution = (1920, 1080)
         camera.start_preview()
         self.camera = camera
         time.sleep(2)
-
+        super().__init__(agent,name)
         
     def sense(self,timestamp):
-        raula_pictures = Path(self.config["raula_pictures"])
-        picture_file = str(raula_pictures /  ('picam_{}.jpg'.format(timestamp)))
+        picture_file = self.mk_filename(timestamp,"picam","jpg")
         self.camera.capture(picture_file)
         return str(picture_file)

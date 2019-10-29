@@ -1,0 +1,4 @@
+# aws cloudformation deploy --template-file=../raula-aws/raula_cfn.yaml --stack-name=raula-dev
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
