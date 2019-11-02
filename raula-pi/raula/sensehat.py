@@ -25,8 +25,12 @@ class SenseHat(Sensor):
         pressure = sh.get_pressure()
 
         return {
-            "gyroscope": gyro,
-            "acceleration": accel,
+            "gyroscope_pitch": gyro["pitch"],
+            "gyroscope_roll": gyro["roll"],
+            "gyroscope_yaw": gyro["yaw"],
+            "acceleration_pitch": accel["pitch"],
+            "acceleration_roll": accel["roll"],
+            "acceleration_yaw": accel["yaw"],
             "compass": compass,
             "temperature": temper,
             "humidity" : humidity,

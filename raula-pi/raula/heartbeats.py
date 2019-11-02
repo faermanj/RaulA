@@ -9,4 +9,6 @@ class Hearbeats(Sensor):
 
         
     def sense(self, timestamp):
-        return self.data
+        return {
+            "heartbeat_data": self.data
+        }

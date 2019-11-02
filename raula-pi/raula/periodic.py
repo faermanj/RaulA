@@ -27,20 +27,15 @@ class Periodic:
         self.agent.threads[self.name] = thread
         thread.start()
         logging.info("Thread [{}] started".format(self.name))
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return self.step()
     
     def delay(self):
-        frequency = 1.0 - float(self.config["frequency"])
+        frequency = 1.0 - float(self.agent.get_config("frequency"))
         range = ((self.max_delay-self.min_delay)/2)
         delay = self.min_delay + frequency * range
         return delay
     
     def step(self):
+        logging.debug("Stepping [{}]".format(self.name))
         ts_before = datetime.datetime.now()
         value = self.sense(timestamp=ts_before)
         ts_after = datetime.datetime.now()
@@ -50,34 +45,59 @@ class Periodic:
             "after" : str(ts_after)
         }
     
-    def run(self):
-        for item in self:
-            self.agent.ingest(self,item)
-            time.sleep(self.delay())
+    def is_running(self):
+        global_running = self.agent.get_config("running") == "1"
+        is_running = global_running
+        return is_running
     
+    
+    def run(self):
+        while(self.is_running()):
+            try:
+                if(self.is_working()):
+                    footprint = self.step()
+                    self.agent.ingest(self,footprint)
+                time.sleep(self.delay())
+            except KeyboardInterrupt:
+                break
+        logging.info("Module [{}] ended".format(self.name))       
+                
+            
     def create_thread(self):
-        self.thread = threading.Thread(target=self.run)
+        self.thread = threading.Thread(target=self.run, daemon=True)
         return self.thread
     
-    def sense(self):
-        raise NonSense
-    
     def get_data_path(self):
-        raula_data = Path(self.config["raula_data"])
+        raula_data = Path(self.agent.get_config("raula_data"))
         return raula_data
+
+    def get_log_path(self):
+        raula_log = Path(self.agent.get_config("raula_log"))
+        return raula_log
     
     def get_module_path(self):
         data_path = self.get_data_path() / self.name
+        return data_path
+
+    def get_module_log_path(self):
+        data_path = self.get_log_path() / self.name
         return data_path
     
     def mk_filename(self,ts,prefix,ext):
         data_path = self.get_module_path()
         data_path / (ts.strftime("%Y/%m/%d/%H/%M"))
         if(not data_path.exists()):
-            print("Creating "+str(data_path))
+            logging.debug("Creating path [{}]"+str(data_path))
             data_path.mkdir(parents=True, exist_ok=True)
-        file_ts = ts.strftime("%Y%m%d%H%M%S%f")
+        file_ts = ts.strftime("%Y%m%d%H%M%S%f") 
         data_file = data_path / '{}_{}.{}'.format(prefix,file_ts,ext)
         picture_file = str(data_file)
-        print("Offering "+ picture_file)
         return picture_file
+    
+    # Abstract Methods
+    
+    def is_working(self):
+        return True 
+    
+    def sense(self):
+        raise NonSense
