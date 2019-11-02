@@ -8,11 +8,10 @@ from .periodic import Periodic
 from pathlib import Path
 
 class S3Sync(Periodic):
-    s3 = None
+    s3 = boto3.client('s3')
     
-    def __init__(self,agent):
-        self.s3 = boto3.client('s3')
-        super().__init__(agent,"s3-sync")
+    def __init__(self,agent,name,section):
+        super().__init__(agent,name,section)
 
     def step(self):
         data_path = self.get_data_path()
@@ -38,12 +37,13 @@ class S3Sync(Periodic):
         return sync_result_file
 
     def key_of(self,relative_path):
-        raula_uuid = self.agent.get_config("raula_uuid")
+        raula_uuid = self.agent.get_default("uuid")
         key = "{}/{}".format(raula_uuid,str(relative_path))
         return key
 
     def sync(self,data_path,relative_path):
-        bucket = self.agent.get_config("aws_bucket_user_data")
+        bucket = self.get_config("bucket")
+        logging.info("Syncing to [{}]".format(bucket))
         file_path = data_path / relative_path
         file_name = str(file_path)
         key = self.key_of(relative_path)

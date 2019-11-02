@@ -4,20 +4,19 @@ import logging
 import datetime
 import os
 from pathlib import Path
+from .module import Module
 
 class NonSense(Exception):
     pass
 
-class Periodic:
-    config = {}
+class Periodic(Module):
     thread = None
     min_delay = 0.0
     max_delay = 0.0
 
-    def __init__(self,agent,name = "periodic" , min_delay=0.1, max_delay=10):
-        self.agent = agent
+    def __init__(self,agent,name,section, min_delay=0.1, max_delay=10):
+        super().__init__(agent,name,section)
         self.config = agent.config
-        self.name = name
         self.min_delay = min_delay
         self.max_delay = max_delay
         self.mod_probe()
@@ -29,7 +28,7 @@ class Periodic:
         logging.info("Thread [{}] started".format(self.name))
     
     def delay(self):
-        frequency = 1.0 - float(self.agent.get_config("frequency"))
+        frequency = 1.0 - float(self.agent.get_default("frequency"))
         range = ((self.max_delay-self.min_delay)/2)
         delay = self.min_delay + frequency * range
         return delay
@@ -46,7 +45,7 @@ class Periodic:
         }
     
     def is_running(self):
-        global_running = self.agent.get_config("running") == "1"
+        global_running = self.agent.get_default("running") == "1"
         is_running = global_running
         return is_running
     
@@ -68,11 +67,11 @@ class Periodic:
         return self.thread
     
     def get_data_path(self):
-        raula_data = Path(self.agent.get_config("raula_data"))
+        raula_data = Path(self.agent.get_default("raula_data"))
         return raula_data
 
     def get_log_path(self):
-        raula_log = Path(self.agent.get_config("raula_log"))
+        raula_log = Path(self.agent.get_default("raula_log"))
         return raula_log
     
     def get_module_path(self):
@@ -87,7 +86,7 @@ class Periodic:
         data_path = self.get_module_path()
         data_path / (ts.strftime("%Y/%m/%d/%H/%M"))
         if(not data_path.exists()):
-            logging.debug("Creating path [{}]"+str(data_path))
+            logging.debug("Creating path [{}]".format(str(data_path)))
             data_path.mkdir(parents=True, exist_ok=True)
         file_ts = ts.strftime("%Y%m%d%H%M%S%f") 
         data_file = data_path / '{}_{}.{}'.format(prefix,file_ts,ext)

@@ -11,9 +11,8 @@ from sense_hat import SenseHat
 class SenseHat(Sensor):
     sensehat = SenseHat()
     
-    def __init__(self,agent,name, data = "<3"):
-        super().__init__(agent,name)
-        self.data = data
+    def __init__(self,agent,name,section):
+        super().__init__(agent,name,section)
         
     def sense(self, timestamp):
         sh = self.sensehat

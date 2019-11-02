@@ -1,16 +1,18 @@
 import json
+import logging
 from tb_device_mqtt import TBDeviceMqttClient, TBPublishInfo
+from .module import Module
 
-class ThingsBoardPublisher():
+class ThingsBoardPublisher(Module):
     
-    def __init__(self,agent):
+    def __init__(self,agent,name,section):
+        super().__init__(agent,name,section)
         agent.on("sensor-data", self.on_sensor_data)
+        logging.info("Initialized ThingsBoardPublisher with token [{}*]".format(len(self.get_config("token"))))
 
     def on_sensor_data(self,event):
         telemetry = event
-        # TODO COnfig 
-        token = "MoTecuJcNIV8SQrldGiN"
-        client = TBDeviceMqttClient("127.0.0.1", token)
+        client = TBDeviceMqttClient("127.0.0.1", self.get_config("token"))
         # Connect to ThingsBoard
         client.connect()
         # Sending telemetry without checking the delivery status

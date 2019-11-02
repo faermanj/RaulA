@@ -1,11 +1,10 @@
 from .sensor import Sensor
 
 class Hearbeats(Sensor):
-    data = ""
+    data = "<3"
     
-    def __init__(self,agent,name, data = "<3"):
-        self.data = data
-        super().__init__(agent,name)
+    def __init__(self,agent,name,section):
+        super().__init__(agent,name,section)
 
         
     def sense(self, timestamp):

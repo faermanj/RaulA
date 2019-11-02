@@ -24,19 +24,21 @@ class Agent:
     config = configparser.ConfigParser()
 
     def mod_probe(self,mod_name, mod_section):
+        module = None
         if (mod_name == "heartbeats"):
-            Hearbeats(self,"heartbeats")
+            module = Hearbeats(self, mod_name, mod_section)
         elif (mod_name == "picamera"):
-            Camera(self,"picam") 
+            module = Camera(self,mod_name, mod_section) 
         elif (mod_name == "sensehat"):
-            SenseHat(self,"sense-hat")
+            module = SenseHat(self,mod_name, mod_section)
         elif (mod_name == "aws_s3"):
-            S3Sync(self)
+            module = S3Sync(self,mod_name, mod_section)
         elif (mod_name == "thingsboard"):
-            ThingsBoardPublisher(self)
+            module = ThingsBoardPublisher(self,mod_name, mod_section)
         else:
             logging.warning("Module [{}] not found".format(mod_name))
-            
+        return module
+
     def mod_probe_all(self):
         logging.info("Loading Modules")
         sections = self.config.sections()
@@ -53,7 +55,7 @@ class Agent:
             thread.join()
 
     # TODO: Load config from file with reasonable defaults
-    def get_config(self,config_key):
+    def get_default(self,config_key):
         return self.config.get('DEFAULT',config_key)
     
     def set_default(self,config_key,config_value):
@@ -69,10 +71,7 @@ class Agent:
         self.set_default("raula_log",str( raula_home / "log"))
         self.set_default("frequency","0.5")
         self.set_default("running","1")
-        
-        #TODO: Externalize to file
-        self.set_default("aws_bucket_user_data","raula-dev-s3bucket-9qu6t4c2729l")
-        self.set_default("raula_uuid","raula-faermanj")
+
         
         raula_ini = raula_home / "raula.ini"
         if (raula_ini.exists()):
@@ -99,17 +98,15 @@ class Agent:
     def trigger(self,event_type,event):
         event_handlers = self.event_handlers.get(event_type,{}) 
         for event_handler in event_handlers:
-            try:
-                event_handler(event)
-            except:
-                logging.info("failed to handle event [{}]".format(event_type))
+            event_handler(event)
+     
         logging.debug("Event [{}] handled".format(event_type))
         
     def init_logging(self):
         logging.getLogger('botocore').setLevel(logging.INFO)
         logging.getLogger('s3transfer').setLevel(logging.INFO)
         logging.getLogger('urllib3').setLevel(logging.INFO)
-        logging.getLogger('tb_device_mqtt').setLevel(logging.WARN)
+        logging.getLogger('tb_device_mqtt').setLevel(logging.WARNING)
 
         
     def start(self):

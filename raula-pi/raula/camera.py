@@ -13,8 +13,8 @@ class Camera(Sensor):
             return False
         
     
-    def __init__(self,agent,name):
-        super().__init__(agent,name)
+    def __init__(self,agent,name,section):
+        super().__init__(agent,name,section)
     
     def get_camera(self):
         if(self.camera):
