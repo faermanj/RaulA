@@ -3,6 +3,7 @@ import threading
 import logging
 import datetime
 import os
+import random
 from pathlib import Path
 from .module import Module
 
@@ -10,31 +11,49 @@ class NonSense(Exception):
     pass
 
 class Periodic(Module):
+    MIN_DELAY = 0.01
+    MAX_VARIANCE = 0.05
+    
     thread = None
-    min_delay = 0.0
-    max_delay = 0.0
 
-    def __init__(self,agent,name,section, min_delay=0.1, max_delay=10):
-        super().__init__(agent,name,section)
-        self.config = agent.config
-        self.min_delay = min_delay
-        self.max_delay = max_delay
-        self.mod_probe()
     
-    def mod_probe(self):
-        thread = self.create_thread() 
-        self.agent.threads[self.name] = thread
-        thread.start()
-        logging.info("Thread [{}] started".format(self.name))
-    
+    step_logger = logging.getLogger('raula.step')
+    logger = logging.getLogger('raula.periodic')
+
+
+    def stand(self):
+        super().stand()
+        delay = round(self.delay(),4)
+        hz = round(1 / delay,4)
+        self.logger.info("Spinning [{}] at [{}] Hz = [{}] delay".format(self.name,hz,delay))
+        self.get_thread().start()
+
+    def join(self):
+        try:
+            self.get_thread().join()
+        except KeyboardInterrupt:
+            self.warning("Join interrupted. Deband!")
+            self.agent.interrupt_all()
+
     def delay(self):
-        frequency = 1.0 - float(self.agent.get_default("frequency"))
-        range = ((self.max_delay-self.min_delay)/2)
-        delay = self.min_delay + frequency * range
+        frequency=float(self.get_config("frequency"))
+        min_delay=float(self.get_config("min_delay"))
+        max_delay=float(self.get_config("max_delay"))
+        frequency = 1.0 - frequency
+        range = ((max_delay-min_delay)/2)
+        delay = min_delay + frequency * range
+        delay = max(delay,Periodic.MIN_DELAY)
+        variance = random.random() * Periodic.MAX_VARIANCE
+        delay = delay * (1.0 - variance)
+        delay = round(delay,4)
+        assert delay > 0.0
         return delay
     
+    def backoff(self):
+        return 100 * self.delay()
+    
     def step(self):
-        logging.debug("Stepping [{}]".format(self.name))
+        self.step_logger.debug("Stepping [{}]".format(self.name))
         ts_before = datetime.datetime.now()
         value = self.sense(timestamp=ts_before)
         ts_after = datetime.datetime.now()
@@ -53,17 +72,23 @@ class Periodic(Module):
     def run(self):
         while(self.is_running()):
             try:
+                time.sleep(self.delay())
                 if(self.is_working()):
                     footprint = self.step()
                     self.agent.ingest(self,footprint)
-                time.sleep(self.delay())
+                else:
+                    backoff = self.backoff()
+                    self.logger.warning("Module [{}] not working. Backing off for  [{}]".format(self.name,backoff))                           
+                    time.sleep(backoff)
             except KeyboardInterrupt:
+                self.logger.info("Module [{}] interrupted".format(self.name))       
                 break
-        logging.info("Module [{}] ended".format(self.name))       
+        self.logger.info("Module [{}] ended".format(self.name))       
                 
             
-    def create_thread(self):
-        self.thread = threading.Thread(target=self.run, daemon=True)
+    def get_thread(self):
+        if (not self.thread):
+            self.thread = threading.Thread(target=self.run, daemon=True)
         return self.thread
     
     def get_data_path(self):
@@ -81,12 +106,13 @@ class Periodic(Module):
     def get_module_log_path(self):
         data_path = self.get_log_path() / self.name
         return data_path
+
     
     def mk_filename(self,ts,prefix,ext):
         data_path = self.get_module_path()
         data_path / (ts.strftime("%Y/%m/%d/%H/%M"))
         if(not data_path.exists()):
-            logging.debug("Creating path [{}]".format(str(data_path)))
+            self.logger.debug("Creating path [{}]".format(str(data_path)))
             data_path.mkdir(parents=True, exist_ok=True)
         file_ts = ts.strftime("%Y%m%d%H%M%S%f") 
         data_file = data_path / '{}_{}.{}'.format(prefix,file_ts,ext)

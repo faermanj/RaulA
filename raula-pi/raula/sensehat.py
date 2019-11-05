@@ -1,19 +1,10 @@
 from .sensor import Sensor
 from sense_hat import SenseHat
 
-# Gyroscope
-# Accelerometer
-# Magnetometer
-# Temperature
-# Humidity
-# Barometric pressure
 
 class SenseHat(Sensor):
     sensehat = SenseHat()
-    
-    def __init__(self,agent,name,section):
-        super().__init__(agent,name,section)
-        
+         
     def sense(self, timestamp):
         sh = self.sensehat
         gyro = sh.get_gyroscope()

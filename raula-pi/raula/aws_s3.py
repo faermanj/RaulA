@@ -10,9 +10,6 @@ from pathlib import Path
 class S3Sync(Periodic):
     s3 = boto3.client('s3')
     
-    def __init__(self,agent,name,section):
-        super().__init__(agent,name,section)
-
     def step(self):
         data_path = self.get_data_path()
         for current_path in data_path.rglob('*'):

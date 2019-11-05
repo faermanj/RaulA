@@ -5,61 +5,95 @@ import time
 import json
 import threading
 import logging
+from logging import DEBUG, WARNING, INFO, ERROR
 import random
 import configparser
 
 from pathlib import Path
 
-from .heartbeats import Hearbeats
+from .heartbeats import Heartbeats
 from .camera import Camera
 from .sensehat import SenseHat
 from .aws_s3 import S3Sync
-from .tb_client import ThingsBoardPublisher
+from .thingsboard import ThingsBoardPublisher
 from .utils import to_json,get_raula_home
+from .ibs_th1 import IBS_TH1
 
 
-class Agent:
-    threads = {}
+class Agent():
+    events_logger = logging.getLogger('raula.events')
+    logger = logging.getLogger('raula.agent')
+    
+    levels = {
+        'botocore': INFO,
+        's3transfer': INFO,
+        'urllib3': INFO,
+        'tb_device_mqtt': WARNING,
+        'raula.events':INFO,
+        'raula.step':INFO,
+        'raula.thingsboard': INFO
+    }
+
+    modules = {}
     event_handlers = {}
     config = configparser.ConfigParser()
 
     def mod_probe(self,mod_name, mod_section):
         module = None
         if (mod_name == "heartbeats"):
-            module = Hearbeats(self, mod_name, mod_section)
+            module = Heartbeats()
         elif (mod_name == "picamera"):
-            module = Camera(self,mod_name, mod_section) 
+            module = Camera() 
         elif (mod_name == "sensehat"):
-            module = SenseHat(self,mod_name, mod_section)
+            module = SenseHat()
         elif (mod_name == "aws_s3"):
-            module = S3Sync(self,mod_name, mod_section)
+            module = S3Sync()
         elif (mod_name == "thingsboard"):
-            module = ThingsBoardPublisher(self,mod_name, mod_section)
+            module = ThingsBoardPublisher()
+        elif (mod_name == "ibs_th1"):
+            module = IBS_TH1()            
         else:
-            logging.warning("Module [{}] not found".format(mod_name))
+            self.logger.warning("Module [{}] not found".format(mod_name))
+        if(module):
+            module.name = mod_name
+            module.section = mod_section
+            module.agent = self
+            self.modules[mod_name] = module
+            module.stand()
         return module
 
-    def mod_probe_all(self):
-        logging.info("Loading Modules")
+    def stand_all(self):
+        self.logger.info("Starting Modules")
         sections = self.config.sections()
         for section_name in sections:
             logging.info("Loading module [{}]".format(section_name))
             mod_name = section_name
             mod_section = self.config[section_name]
             module = self.mod_probe(mod_name,mod_section)
+    
+    def skid_all(self):
+        self.logger.debug("Stopping modules")
+        for module in self.modules.values():
+            logging.debug("Waiting for module [{}] to stop".format(module.name))
+            module.skid()
 
-    # TODO: Decouple modules from threading
-    def wait_all(self):
-        logging.debug("Waiting for threads to finish")
-        for thread in self.threads.values():
-            thread.join()
+    def join_all(self):
+        self.logger.debug("Waiting for modules to join")
+        for module in self.modules.values():
+            self.logger.debug("Waiting for module [{}] to join".format(module.name))
+            module.join()
 
+    # TODO: Proper wait/notify using threading.Event
+    def interrupt_all(self):
+        self.set_default("running","0")
+        self.skid_all()
+    
     # TODO: Load config from file with reasonable defaults
     def get_default(self,config_key):
         return self.config.get('DEFAULT',config_key)
     
     def set_default(self,config_key,config_value):
-        logging.debug("[{}] := [{}]".format(config_key,config_value))
+        self.logger.debug("[{}] := [{}]".format(config_key,config_value))
         self.config['DEFAULT'][config_key] = config_value
 
     def lookup_config(self):
@@ -71,15 +105,16 @@ class Agent:
         self.set_default("raula_log",str( raula_home / "log"))
         self.set_default("frequency","0.5")
         self.set_default("running","1")
-
+        self.set_default("min_delay","0.1")
+        self.set_default("max_delay","10")
         
         raula_ini = raula_home / "raula.ini"
         if (raula_ini.exists()):
             try: 
                 self.config.read(str(raula_ini),encoding='utf-8-sig')
-                logging.info("Configuration lodaded [{}]".format(raula_ini))
+                self.logger.info("Configuration lodaded [{}]".format(raula_ini))
             except:
-                logging.error("Configuration error in [{}]".format(raula_ini))
+                self.logger.error("Configuration error in [{}]".format(raula_ini))
         
         return self.config
 
@@ -100,25 +135,23 @@ class Agent:
         for event_handler in event_handlers:
             event_handler(event)
      
-        logging.debug("Event [{}] handled".format(event_type))
+        self.events_logger.debug("Event [{}] handled".format(event_type))
         
     def init_logging(self):
-        logging.getLogger('botocore').setLevel(logging.INFO)
-        logging.getLogger('s3transfer').setLevel(logging.INFO)
-        logging.getLogger('urllib3').setLevel(logging.INFO)
-        logging.getLogger('tb_device_mqtt').setLevel(logging.WARNING)
-
+        for pack, lvl in Agent.levels.items():
+            logging.getLogger(pack).setLevel(lvl)
         
     def start(self):
-        print("Raula is starting")
+        self.logger.info("Raula is starting")
         self.init_logging()
         try:
             self.lookup_config()
-            self.mod_probe_all()
-            self.wait_all()
+            self.stand_all()
+            self.join_all()
         except KeyboardInterrupt:
-            self.set_default("running","0")
-        logging.info("Raula ended")
+            logging.info("Skidding for KeyboardInterrupt")
+            self.interrupt_all()
+        self.logger.info("Raula stopped")
     
 
 def start():

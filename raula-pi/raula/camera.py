@@ -12,10 +12,6 @@ class Camera(Sensor):
         except:
             return False
         
-    
-    def __init__(self,agent,name,section):
-        super().__init__(agent,name,section)
-    
     def get_camera(self):
         if(self.camera):
             return self.camera
@@ -32,8 +28,12 @@ class Camera(Sensor):
                 
         
     def sense(self,timestamp):
+        from picamera import PiCamera, PiCameraRuntimeError
         picture_file = self.mk_filename(timestamp,"picam","jpg")
-        self.get_camera().capture(picture_file, format = "jpeg")
+        try:
+            self.get_camera().capture(picture_file, format = "jpeg")
+        except PiCameraRuntimeError:
+            self.warning("Failed to capture camera")
         return None
     
     #TODO: close camera after use
