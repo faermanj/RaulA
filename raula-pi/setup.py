@@ -1,11 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='raula',
       version='0.1',
-      description='A safety bottle for cyclists',
+      description='A safety box for cyclists',
       url='http://github.com/faermanj/RaulA',
-      author='Flying Circus',
-      author_email='flyingcircus@example.com',
+      author='Julio Faerman',
+      author_email='jfaerman@gmail.com',
       license='MIT',
-      packages=['funniest'],
-      zip_safe=False)
+      packages=find_packages())

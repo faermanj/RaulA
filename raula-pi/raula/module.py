@@ -6,10 +6,13 @@ class Module:
     name = ""
     section = None
 
-    def get_float(self, config_key, default_value):
+    def get_int(self, config_key, default_value=0):
+        return int(self.get_config(config_key, default_value))
+
+    def get_float(self, config_key, default_value=0.0):
         return float(self.get_config(config_key, default_value))
 
-    def get_config(self, config_key, default_value):
+    def get_config(self, config_key, default_value=""):
         value = self.section.get(config_key)
         if (not value):
             value = default_value

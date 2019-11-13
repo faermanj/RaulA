@@ -27,7 +27,10 @@ class Agent():
         'tb_device_mqtt': WARNING,
         'raula.events': INFO,
         'raula.step': INFO,
-        'raula.thingsboard': INFO
+        'AWSIoTPythonSDK': WARNING,
+        'raula.thingsboard': INFO,
+        'raula.heartbeats': INFO,
+        'raula.aws_iot':INFO
     }
 
     class_names = {
@@ -35,6 +38,7 @@ class Agent():
         "camera": (".camera", "Camera"),
         "sensehat": (".sensehat", "SenseHat"),
         "aws_s3": (".aws_s3", "S3Sync"),
+        "aws_iot": (".aws_iot", "AWSIoTPublisher"),
         "thingsboard": (".thingsboard", "ThingsBoardPublisher"),
         "ibs_th1": (".ibs_th1", "IBS_TH1"),
     }
@@ -110,7 +114,8 @@ class Agent():
 
         self.set_default("raula_home", str(raula_home))
         self.set_default("raula_data", str(raula_home / "data"))
-        self.set_default("raula_log", str(raula_home / "log"))
+        self.set_default("raula_log",  str(raula_home / "log"))
+        self.set_default("raula_config",  str(raula_home / "config"))
         self.set_default("frequency", "0.5")
         self.set_default("running", "1")
         self.set_default("min_delay", "0.1")
