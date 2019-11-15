@@ -1,5 +1,15 @@
-Raula is a "safety bottle" for cyclists that is accessible and easy to build. The goal is to detect, prevent, record and alert on cycling incidents. Initially this will target collisions and falls, but the goal is to provide an open platform for innovation on cyclism safety.
+The raula-pi is a python module to collect data from sensors and camera. It is not specific for this project, you can use it anywhere you need a generic data collector for raspberry pi.
 
-# Collaboration is welcome!
+# Current modules
 
-This project is jut getting started, but totally open to collaboration. To get started, take a look at the [Starting Architecture](https://github.com/faermanj/RaulA/blob/master/doc/arch/2019/10/2019-10-11_Starting%20Architecture.md) and [Issues](https://github.com/faermanj/RaulA/issues)
+Sensors:
+* SenseHat
+* IBS-TH1 thermometer
+* GrovePi [WIP]
+
+Cameras:
+* Raspi Camera
+
+Cloud:
+* ThingsBoard
+* AWS S3 
