@@ -5,6 +5,7 @@ class Module:
     agent = None
     name = ""
     section = None
+    dependencies = []
 
     def get_int(self, config_key, default_value=0):
         return int(self.get_config(config_key, default_value))

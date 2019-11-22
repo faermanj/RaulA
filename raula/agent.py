@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .heartbeats import Heartbeats
 import importlib
-from .utils import to_json, get_raula_home
+from .utils import to_json, get_raula_home, pip_probe
 
 
 class Agent():
@@ -28,9 +28,10 @@ class Agent():
         'raula.events': INFO,
         'raula.step': INFO,
         'AWSIoTPythonSDK': WARNING,
-        'raula.thingsboard': INFO,
+        'raula': INFO,
+        'raula.thingsboard': DEBUG,
         'raula.heartbeats': INFO,
-        'raula.aws_iot':INFO
+        'raula.aws_iot': INFO
     }
 
     class_names = {
@@ -41,13 +42,14 @@ class Agent():
         "aws_iot": (".aws_iot", "AWSIoTPublisher"),
         "thingsboard": (".thingsboard", "ThingsBoardPublisher"),
         "ibs_th1": (".ibs_th1", "IBS_TH1"),
+        "console": (".console", "Console")
     }
 
     modules = {}
     event_handlers = {}
     config = configparser.ConfigParser()
-
-    def load_module(self, mod_name):
+        
+    def load_clazz(self, mod_name):
         clazz_names = self.class_names.get(mod_name)
         if (clazz_names):
             package_name = clazz_names[0]
@@ -58,14 +60,19 @@ class Agent():
                 obj = clazz()
                 return obj
 
-    def mod_probe(self, mod_name, mod_section):
-        module = self.load_module(mod_name)
+    def mod_probe(self, mod_name, mod_section={}):
+        module = self.load_clazz(mod_name)
         if(module):
             module.name = mod_name
             module.section = mod_section
             module.agent = self
             self.modules[mod_name] = module
-            module.stand()
+            for dep in module.dependencies:
+                pip_probe(dep)
+            try:
+                module.stand()
+            except:
+                self.logger.warning("Failed to stand module [{}]".format(mod_name))
         else:
             self.logger.warning("Module [{}] not found".format(mod_name))
         return module
@@ -74,7 +81,8 @@ class Agent():
         self.logger.info("Starting Modules")
         sections = self.config.sections()
         if (not len(sections)):
-            self.mod_probe("heartbeats", {})
+            self.mod_probe("heartbeats")
+            self.mod_probe("console")
         for section_name in sections:
             logging.info("Loading module [{}]".format(section_name))
             mod_name = section_name
