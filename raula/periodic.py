@@ -29,16 +29,19 @@ class Periodic(Module):
         delay = round(self.delay(), 4)
         hz = round(1 / delay, 4)
         self.logger.info(
-            "Spinning [{}] at [{}] Hz = [{}] delay".format(self.name, hz, delay))
+            "Standing module [{}] at [{}]Hz = [{}]s delay".format(self.name, hz, delay))
         self.get_thread().start()
+    
+    def skid(self):
+        self.logger.info("Skidding module [{}]".format(self.name))
+        self.agent.set_default("running","0")
 
     def join(self):
         try:
             self.get_thread().join()
         except KeyboardInterrupt:
-            print("KeyboardInterrupt from Periodic.join")
-            self.warning("Join interrupted. Deband!")
-            # self.agent.interrupt_all()
+            self.debug("KeyboardInterrupt on Periodic[{}].join()".format(self.name))
+            self.skid()
 
     def delay(self):
         frequency = self.get_float("frequency", Periodic.DEF_FREQUENCY)

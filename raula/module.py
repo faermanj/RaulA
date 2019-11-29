@@ -19,6 +19,9 @@ class Module:
             value = default_value
         return value
 
+    def set_config(self, config_key, config_value):
+        self.section[config_key] = config_value
+
     def stand(self):
         self.debug("Module [{}] stand".format(self.name))
 

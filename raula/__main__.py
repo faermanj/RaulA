@@ -1,7 +1,5 @@
-import raula.agent
-
-def main():
-    raula.agent.start()
+from raula.agent import Agent
 
 if __name__ == '__main__':
-    main()
+    agent = Agent()
+    agent.start()

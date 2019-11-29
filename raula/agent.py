@@ -29,8 +29,8 @@ class Agent():
         'raula.step': INFO,
         'AWSIoTPythonSDK': WARNING,
         'raula': INFO,
-        'raula.thingsboard': DEBUG,
-        'raula.heartbeats': INFO,
+        'raula.thingsboard': INFO,
+        'raula.heartbeats': DEBUG,
         'raula.aws_iot': INFO
     }
 
@@ -48,7 +48,7 @@ class Agent():
     modules = {}
     event_handlers = {}
     config = configparser.ConfigParser()
-        
+
     def load_clazz(self, mod_name):
         clazz_names = self.class_names.get(mod_name)
         if (clazz_names):
@@ -72,13 +72,14 @@ class Agent():
             try:
                 module.stand()
             except:
-                self.logger.warning("Failed to stand module [{}]".format(mod_name))
+                self.logger.warning(
+                    "Failed to stand module [{}]".format(mod_name))
         else:
             self.logger.warning("Module [{}] not found".format(mod_name))
         return module
 
     def stand_all(self):
-        self.logger.info("Starting Modules")
+        self.logger.info("Starting Modules!")
         sections = self.config.sections()
         if (not len(sections)):
             self.mod_probe("heartbeats")
@@ -177,6 +178,3 @@ class Agent():
             self.interrupt_all()
         self.logger.info("Raula stopped")
 
-
-def start():
-    Agent().start()
