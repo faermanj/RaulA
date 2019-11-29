@@ -5,6 +5,7 @@ import time
 import json
 import threading
 import logging
+import argparse
 from logging import DEBUG, WARNING, INFO, ERROR
 import random
 import configparser
@@ -45,6 +46,7 @@ class Agent():
         "console": (".console", "Console")
     }
 
+    args = None
     modules = {}
     event_handlers = {}
     config = configparser.ConfigParser()
@@ -164,17 +166,22 @@ class Agent():
     def init_logging(self):
         for pack, lvl in Agent.levels.items():
             logging.getLogger(pack).setLevel(lvl)
+    
+    def init_args(self):
+        parser = argparse.ArgumentParser(description='Start the RaulA data collection agent.')
+        parser.add_argument("-i", dest="interactive",action='store_true',  help="Start in interactive mode" )
+        self.args = parser.parse_args()
 
     def start(self):
-        self.logger.info("Raula is starting")
+        self.init_args()
         self.init_logging()
         try:
             self.lookup_config()
             self.stand_all()
-            self.join_all()
+            if (not self.args.interactive):
+                self.join_all()
         except KeyboardInterrupt:
-            print("KeybardInterrupt from Agent")
             logging.info("Skidding for KeyboardInterrupt")
             self.interrupt_all()
-        self.logger.info("Raula stopped")
+        self.logger.info("Raula started")
 
