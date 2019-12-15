@@ -9,6 +9,8 @@ import argparse
 from logging import DEBUG, WARNING, INFO, ERROR
 import random
 import configparser
+import traceback
+import uuid
 
 from pathlib import Path
 
@@ -31,8 +33,11 @@ class Agent():
         'AWSIoTPythonSDK': WARNING,
         'raula': INFO,
         'raula.thingsboard': INFO,
-        'raula.heartbeats': DEBUG,
-        'raula.aws_iot': INFO
+        'raula.heartbeats': INFO,
+        'raula.aws_iot': DEBUG,
+        'raula.ibs_th1': DEBUG,
+        'raula.ble': INFO
+        
     }
 
     class_names = {
@@ -43,7 +48,9 @@ class Agent():
         "aws_iot": (".aws_iot", "AWSIoTPublisher"),
         "thingsboard": (".thingsboard", "ThingsBoardPublisher"),
         "ibs_th1": (".ibs_th1", "IBS_TH1"),
-        "console": (".console", "Console")
+        "console": (".console", "Console"),
+        "ble":(".ble","BLE"),
+        "ssht":(".ssht","SSHTunnel")
     }
 
     args = None
@@ -61,30 +68,44 @@ class Agent():
                 clazz = getattr(module, class_name)
                 obj = clazz()
                 return obj
-
+        
     def mod_probe(self, mod_name, mod_section={}):
-        module = self.load_clazz(mod_name)
-        if(module):
-            module.name = mod_name
-            module.section = mod_section
-            module.agent = self
-            self.modules[mod_name] = module
-            for dep in module.dependencies:
-                pip_probe(dep)
-            try:
-                module.stand()
-            except:
-                self.logger.warning(
-                    "Failed to stand module [{}]".format(mod_name))
-        else:
-            self.logger.warning("Module [{}] not found".format(mod_name))
+        module = None
+        
+        # Id
+        guid = mod_section.get("guid")
+        if not guid:
+            guid = "{}::{}".format(mod_name,str(uuid.uuid4())) 
+    
+        # Search
+        if guid in self.modules:
+                logging.debug("Module [{}] already loaded".format(guid))
+        else:    
+            logging.debug("Loading module [{}] [{}]".format(mod_name,guid))
+            module = self.load_clazz(mod_name)
+            if(module):
+                module.name = mod_name
+                module.section = mod_section
+                module.agent = self
+                self.modules[guid] = module
+                for dep in module.dependencies:
+                    pip_probe(dep)
+                try:
+                    module.stand()
+                except:
+                    self.logger.warning("Failed to stand module [{}]".format(mod_name))
+                    traceback.print_exc()
+
+            else:
+                self.logger.warning("Module [{}] not found".format(mod_name))
         return module
 
     def stand_all(self):
         self.logger.info("Starting Modules!")
         sections = self.config.sections()
+        self.mod_probe("heartbeats")
+        self.mod_probe("ble")
         if (not len(sections)):
-            self.mod_probe("heartbeats")
             self.mod_probe("console")
         for section_name in sections:
             logging.info("Loading module [{}]".format(section_name))
@@ -127,10 +148,7 @@ class Agent():
         self.set_default("raula_data", str(raula_home / "data"))
         self.set_default("raula_log",  str(raula_home / "log"))
         self.set_default("raula_config",  str(raula_home / "config"))
-        self.set_default("frequency", "0.5")
         self.set_default("running", "1")
-        self.set_default("min_delay", "0.1")
-        self.set_default("max_delay", "10")
 
         raula_ini = raula_home / "raula.ini"
         if (raula_ini.exists()):

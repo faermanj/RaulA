@@ -14,9 +14,10 @@ class NonSense(Exception):
 
 class Periodic(Module):
     MIN_DELAY = 0.01
+    MAX_DELAY = 3600
     MAX_VARIANCE = 0.05
-    DEF_FREQUENCY = 0.5
-    DEF_MIN_DELAY = MIN_DELAY
+    DEF_FREQUENCY = 10
+    DEF_MIN_DELAY = 5
     DEF_MAX_DELAY = 60
 
     thread = None
@@ -38,24 +39,32 @@ class Periodic(Module):
 
     def join(self):
         try:
-            self.get_thread().join()
+            worker = self.get_thread()
+            if (worker.is_alive()):
+                worker.join()
         except KeyboardInterrupt:
             self.debug("KeyboardInterrupt on Periodic[{}].join()".format(self.name))
             self.skid()
+            
+    def default_delay(self):
+        return (Periodic.DEF_MIN_DELAY, Periodic.DEF_MAX_DELAY, Periodic.DEF_FREQUENCY)
+        
 
     def delay(self):
-        frequency = self.get_float("frequency", Periodic.DEF_FREQUENCY)
-        min_delay = self.get_float("min_delay", Periodic.DEF_MIN_DELAY)
-        max_delay = self.get_float("max_delay", Periodic.DEF_MAX_DELAY)
-        frequency = 1.0 - frequency
-        range = ((max_delay-min_delay)/2)
-        delay = min_delay + frequency * range
-        delay = max(delay, Periodic.MIN_DELAY)
-        variance = random.random() * Periodic.MAX_VARIANCE
-        delay = delay * (1.0 - variance)
-        delay = round(delay, 4)
-        assert delay > 0.0
-        return delay
+        (min_delay, max_delay, frequency)  = self.default_delay()
+    
+        min_delay = self.get_float("min_delay", min_delay)
+        max_delay = self.get_float("max_delay", max_delay)
+        frequency = self.get_float("frequency", frequency)
+        
+        frequency = max(frequency, Periodic.MIN_DELAY)
+        frequency = min(frequency, Periodic.MAX_DELAY)
+
+        noise = random.random() * Periodic.MAX_VARIANCE
+        frequency = frequency * (1.0 - noise)
+        frequency = round(frequency, 4)
+        assert frequency > 0.0
+        return frequency
 
     def backoff(self):
         return 100 * self.delay()
