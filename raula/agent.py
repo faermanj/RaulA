@@ -122,10 +122,15 @@ class Agent():
 
     def join_all(self):
         self.logger.debug("Waiting for modules to join")
-        for module in self.modules.values():
+        while self.modules:
+            mod_key = next(iter(self.modules.keys()))
+            mod_obj = self.modules.get(mod_key)
             self.logger.debug(
-                "Waiting for module [{}] to join".format(module.name))
-            module.join()
+                "Waiting for module [{}] to join".format(mod_key))
+            mod_obj.join()
+            del self.modules[mod_key]
+        self.logger.debug("All modules finished.")
+            
 
     # TODO: Proper wait/notify using threading.Event
     def interrupt_all(self):
