@@ -23,6 +23,8 @@ class Agent():
     events_logger = logging.getLogger('raula.events')
     logger = logging.getLogger('raula.agent')
 
+    separator = "/"
+    
     levels = {
         'botocore': INFO,
         's3transfer': INFO,
@@ -36,7 +38,7 @@ class Agent():
         'raula.heartbeats': INFO,
         'raula.aws_iot': DEBUG,
         'raula.ibs_th1': DEBUG,
-        'raula.ble': INFO
+        'raula.ble': DEBUG
         
     }
 
@@ -75,25 +77,26 @@ class Agent():
         # Id
         guid = mod_section.get("guid")
         if not guid:
-            guid = "{}::{}".format(mod_name,str(uuid.uuid4())) 
+            guid = str(uuid.uuid4())
+        mod_key = "{}{}{}".format(mod_name,Agent.separator,guid)
     
         # Search
-        if guid in self.modules:
-                logging.debug("Module [{}] already loaded".format(guid))
+        if mod_key in self.modules:
+                logging.debug("Module [{}] already loaded".format(mod_key))
         else:    
-            logging.debug("Loading module [{}] [{}]".format(mod_name,guid))
+            logging.debug("Loading module [{}]".format(mod_key))
             module = self.load_clazz(mod_name)
             if(module):
                 module.name = mod_name
                 module.section = mod_section
                 module.agent = self
-                self.modules[guid] = module
+                self.modules[mod_key] = module
                 for dep in module.dependencies:
                     pip_probe(dep)
                 try:
                     module.stand()
                 except:
-                    self.logger.warning("Failed to stand module [{}]".format(mod_name))
+                    self.logger.warning("Failed to stand module [{}]".format(mod_key))
                     traceback.print_exc()
 
             else:
@@ -103,10 +106,12 @@ class Agent():
     def stand_all(self):
         self.logger.info("Starting Modules!")
         sections = self.config.sections()
-        self.mod_probe("heartbeats")
-        self.mod_probe("ble")
+
         if (not len(sections)):
             self.mod_probe("console")
+            self.mod_probe("heartbeats")
+            self.mod_probe("ble")
+        
         for section_name in sections:
             logging.info("Loading module [{}]".format(section_name))
             mod_name = section_name
@@ -155,7 +160,7 @@ class Agent():
         self.set_default("raula_config",  str(raula_home / "config"))
         self.set_default("running", "1")
 
-        raula_ini = raula_home / "raula.ini"
+        raula_ini = Path("/boot/raula.ini") 
         if (raula_ini.exists()):
             try:
                 self.config.read(str(raula_ini), encoding='utf-8-sig')
