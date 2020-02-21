@@ -193,6 +193,8 @@ class Agent():
         self.events_logger.debug("Event [{}] handled".format(event_type))
 
     def init_logging(self):
+        FORMAT = '%(asctime)s %(levelname)s %(name)s %(message)s'
+        logging.basicConfig(format=FORMAT)
         for pack, lvl in Agent.levels.items():
             logger = logging.getLogger(pack)
             logger.setLevel(lvl)

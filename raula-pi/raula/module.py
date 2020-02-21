@@ -2,6 +2,7 @@ import logging
 
 
 class Module:
+    logger = logging.getLogger("raula.module")
     agent = None
     name = ""
     section = None
@@ -23,13 +24,13 @@ class Module:
         self.section[config_key] = config_value
 
     def stand(self):
-        self.debug("Module [{}] stand".format(self.name))
+        Module.logger.debug("Module [{}] stand".format(self.name))
 
     def skid(self):
-        self.debug("Module [{}] skid".format(self.name))
+        Module.logger.debug("Module [{}] skid".format(self.name))
 
     def join(self):
-        self.debug("Module [{}] join".format(self.name))
+        Module.logger.debug("Module [{}] join".format(self.name))
 
     def getLogger(self):
         logger_name = self.name.split("/")[0]
