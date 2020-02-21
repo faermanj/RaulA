@@ -36,9 +36,10 @@ class Agent():
         'raula': INFO,
         'raula.thingsboard': INFO,
         'raula.heartbeats': INFO,
-        'raula.aws_iot': DEBUG,
+        'raula.aws_iot': INFO,
         'raula.ibs_th1': DEBUG,
-        'raula.ble': DEBUG
+        'raula.ble': INFO,
+        'raula.step': INFO
         
     }
 
@@ -60,7 +61,9 @@ class Agent():
     event_handlers = {}
     config = configparser.ConfigParser()
 
-    def load_clazz(self, mod_name):
+    def load_clazz(self, section_name):
+        section_names = section_name.split("/")
+        mod_name = section_names[0]
         clazz_names = self.class_names.get(mod_name)
         if (clazz_names):
             package_name = clazz_names[0]
@@ -70,6 +73,8 @@ class Agent():
                 clazz = getattr(module, class_name)
                 obj = clazz()
                 return obj
+        else:
+            logging.warning("Could not find class for module [{}] [{}]".format(section_name,mod_name))
         
     def mod_probe(self, mod_name, mod_section={}):
         module = None
@@ -104,16 +109,12 @@ class Agent():
         return module
 
     def stand_all(self):
-        self.logger.info("Starting Modules!")
         sections = self.config.sections()
-
-        if (not len(sections)):
-            self.mod_probe("console")
-            self.mod_probe("heartbeats")
-            self.mod_probe("ble")
+        sections_len = len(sections)
         
+        self.logger.debug("Loading [{}] configuration sections".format(sections_len))
         for section_name in sections:
-            logging.info("Loading module [{}]".format(section_name))
+            logging.info("Loading section [{}]".format(section_name))
             mod_name = section_name
             mod_section = self.config[section_name]
             self.mod_probe(mod_name, mod_section)
@@ -193,7 +194,9 @@ class Agent():
 
     def init_logging(self):
         for pack, lvl in Agent.levels.items():
-            logging.getLogger(pack).setLevel(lvl)
+            logger = logging.getLogger(pack)
+            logger.setLevel(lvl)
+            
     
     def init_args(self):
         parser = argparse.ArgumentParser(description='Start the RaulA data collection agent.')
@@ -211,5 +214,5 @@ class Agent():
         except KeyboardInterrupt:
             logging.info("Skidding for KeyboardInterrupt")
             self.interrupt_all()
-        self.logger.info("Raula started")
+        self.logger.debug("Raula end of start()")
 

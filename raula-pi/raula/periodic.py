@@ -70,15 +70,18 @@ class Periodic(Module):
         return 100 * self.delay()
 
     def step(self):
-        self.step_logger.debug("Stepping [{}]".format(self.name))
         ts_before = datetime.datetime.now()
         value = self.sense(timestamp=ts_before)
         ts_after = datetime.datetime.now()
-        return {
+        result =  {
             "before": str(ts_before),
             "value": value,
             "after": str(ts_after)
         }
+        ts_diff = ts_after - ts_before
+        value_str = str(value)
+        self.step_logger.debug("Step [{}] took [{}] value [{}]".format(self.name, ts_diff,value_str))
+        return result
 
     def is_running(self):
         global_running = self.agent.get_default("running") == "1"

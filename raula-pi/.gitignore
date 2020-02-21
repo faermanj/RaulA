@@ -105,3 +105,9 @@ venv.bak/
 
 .idea/
 
+# Not Yet
+raula-droid
+raula-droid/
+raula-droid/*
+
+

@@ -1,55 +1,73 @@
 from .sensor import Sensor
 import logging
 import struct
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral, BTLEManagementError, BTLEDisconnectError
+from bluepy.btle import Scanner, DefaultDelegate, Peripheral, BTLEManagementError, BTLEDisconnectError, BTLEInternalError
 import binascii
 import sys
+import time
 
 
 class IBS_TH1(Sensor):
-    addr = None    
+    addr = None
+    peripheral = None
     TH1_CHARACTERISTIC_HANDLE=0x002d
         
     def default_delay(self):
-        return (15,180,30)
+        return (15,180,60)
                 
     def stand(self):
         self.addr = self.get_config("addr")
         super().stand()
-        self.info("IBS_TH1 [{}] standing with addr [{}]".format(self.name, self.addr))
+        def hello_th1(peripheral):
+            self.info("IBS_TH1 [{}] standing with addr [{}]".format(self.name, self.addr))
+        self.with_peripheral(hello_th1)
+    
+    def skid(self):
+        if(self.peripheral):
+            self.info("IBS_TH1 [{}] disconnected".format(self.name))
+            self.peripheral.disconnect()    
+        
+    
     
     def readInt16LE(self,val,offset):
         results = struct.unpack_from("<h",val,offset)
         result = results[0]
         return result
     
-        # temp_lo_hex = val[b0]
-        # temp_hi_hex = val[b1]
-        # temp_bytes = bytes([temp_hi_hex,temp_lo_hex])
-        # temp_hex = binascii.b2a_hex(temp_bytes).decode('utf-8')
-        # temp_int = int(temp_hex, 16)
-        # temp_float = temp_int / 100
-        # temp_str = str(temp_float)
-        # return temp_str
-        
-    def sense(self, timestamp):
-        result = None
-        if (self.addr):
-                try:
-                    peripheral = Peripheral()
-                    peripheral.connect(self.addr)
-                    val = peripheral.readCharacteristic(IBS_TH1.TH1_CHARACTERISTIC_HANDLE)
-                    peripheral.disconnect()
-                    val_str =  binascii.b2a_hex(val).decode('utf-8')
-                    temp_str = self.readInt16LE(val,0)
-                    humi_str = self.readInt16LE(val,2)
-                    self.debug("IBS_TH1 [{}] => [{}] [{}]c [{}]h".format(self.addr,val_str,temp_str,humi_str))
-                    result = {
-                        "temperature_th1": temp_str
-                    }
-                except BTLEDisconnectError as ex:
-                    self.warning("Could not connect to IBS_TH1")
-                    self.warning(str(ex))
+    def with_peripheral(self,action,retries = 1):
+        if (not self.peripheral and self.addr):
+            try:
+                self.peripheral = Peripheral()
+                self.peripheral.connect(self.addr)
+                self.info("IBS_TH1 [{}] connected to [{}]".format(self.name, self.addr))
+            except BTLEDisconnectError as ex:
+                self.warning("IBS_TH1 [{}] failed to connect to [{}]".format(self.name, self.addr))
+                print(ex)
+                self.peripheral = None
+        if (self.peripheral and action and retries):
+            try:
+                return action(self.peripheral)
+            except (BTLEDisconnectError,BTLEInternalError) as ex:
+                self.info("IBS_TH1 [{}] disconnected. Retrying soon.".format(self.name),exc_info=True)
+                self.peripheral = None
+                time.sleep(5)
+                return self.with_peripheral(action, retries - 1)
         else:
-            self.error("IBS_TH1 peripheral not found")
-        return result
+            self.warning("IBS_TH1 [{}] unavailable, [{}] action [{}] retries".format(self.name, action is not None, retries))
+            return None
+    
+    def sense(self, timestamp):
+        def read_th1(peripheral):
+            val = peripheral.readCharacteristic(IBS_TH1.TH1_CHARACTERISTIC_HANDLE)
+            val_str =  binascii.b2a_hex(val).decode('utf-8')
+            temp = self.readInt16LE(val,0)
+            temp = temp / 100.0
+            humi = self.readInt16LE(val,2)
+            humi = humi / 100.0
+            self.debug("IBS_TH1 [{}] => [{}] [{}]c [{}]h".format(self.addr,val_str,temp,humi))
+            result = {
+                        "temperature": temp,
+                        "humidity": humi,
+                    }
+            return result 
+        return self.with_peripheral(read_th1)

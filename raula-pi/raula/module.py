@@ -32,16 +32,18 @@ class Module:
         self.debug("Module [{}] join".format(self.name))
 
     def getLogger(self):
-        return logging.getLogger("raula.{}".format(self.name))
+        logger_name = self.name.split("/")[0]
+        logger_name = "raula.{}".format(logger_name)
+        return logging.getLogger(logger_name)
 
-    def debug(self, message):
-        self.getLogger().debug(message)
+    def debug(self, *args, **kwargs):
+        self.getLogger().debug(*args, **kwargs)
 
-    def info(self, message):
-        self.getLogger().info(message)
+    def info(self, *args, **kwargs):
+        self.getLogger().info(*args, **kwargs)
 
-    def error(self, message):
-        self.getLogger().error(message)
+    def error(self, *args, **kwargs):
+        self.getLogger().error(*args, **kwargs)
 
-    def warning(self, message):
-        self.getLogger().warning(message)
+    def warning(self, *args, **kwargs):
+        self.getLogger().warning(*args, **kwargs)
