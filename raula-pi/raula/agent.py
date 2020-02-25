@@ -33,14 +33,15 @@ class Agent():
         'raula.events': INFO,
         'raula.step': INFO,
         'AWSIoTPythonSDK': WARNING,
-        'raula': INFO,
-        'raula.thingsboard': INFO,
+        'raula': DEBUG,
+        'raula.thingsboard': DEBUG,
         'raula.heartbeats': INFO,
         'raula.aws_iot': INFO,
-        'raula.ibs_th1': DEBUG,
+        'raula.ibs_th1': INFO,
         'raula.ble': INFO,
-        'raula.step': INFO
-        
+        'raula.step': INFO,
+        'raula.agent': INFO, 
+        'raula.module': INFO 
     }
 
     class_names = {
@@ -61,38 +62,54 @@ class Agent():
     event_handlers = {}
     config = configparser.ConfigParser()
 
-    def load_clazz(self, section_name):
-        section_names = section_name.split("/")
-        mod_name = section_names[0]
+    def load_clazz(self, mod_name):
         clazz_names = self.class_names.get(mod_name)
         if (clazz_names):
             package_name = clazz_names[0]
             class_name = clazz_names[1]
-            module = importlib.import_module(package_name, package="raula")
-            if(module):
+            self.logger.debug("Importing module [{}] as [{}].[{}]".format(mod_name,package_name,class_name))
+            module = None
+            try:
+                module = importlib.import_module(package_name, package="raula")
+                self.logger.debug("Module imported [{}] as [{}].[{}]".format(mod_name,package_name,class_name))            
+            except:
+                self.logger.debug("Unable to import [{}] as [{}].[{}]".format(mod_name,package_name,class_name),exc_info=True)                            
+            if(module is not None):
                 clazz = getattr(module, class_name)
                 obj = clazz()
                 return obj
+            else:
+                self.logger.debug("Unable to load module [{}] as [{}].[{}]".format(section_name,package_name,class_name))
+                
         else:
-            logging.warning("Could not find class for module [{}] [{}]".format(section_name,mod_name))
+            self.logger.warning("Could not find class for module [{}] [{}]".format(section_name,mod_name))
         
-    def mod_probe(self, mod_name, mod_section={}):
+    def mod_probe(self, section_name, mod_section={}):
         module = None
-        
-        # Id
-        guid = mod_section.get("guid")
+        guid = None
+        section_names = section_name.split("/")
+        mod_name = section_names[0]
+        if (len(section_names) > 1):
+            guid = section_names[1]
+        if not guid:
+            guid = mod_section.get("guid")
         if not guid:
             guid = str(uuid.uuid4())
         mod_key = "{}{}{}".format(mod_name,Agent.separator,guid)
     
         # Search
         if mod_key in self.modules:
-                logging.debug("Module [{}] already loaded".format(mod_key))
+            self.logger.debug("Module [{}] already loaded".format(mod_key))
         else:    
-            logging.debug("Loading module [{}]".format(mod_key))
-            module = self.load_clazz(mod_name)
+            self.logger.debug("Loading module [{}]/[{}]".format(mod_name,guid))
+            try:
+                module = self.load_clazz(mod_name)
+            except:
+                logging.debug("Failed to load module [{}]".format(mod_key),exc_info=True)
+                
             if(module):
                 module.name = mod_name
+                module.guid = guid
                 module.section = mod_section
                 module.agent = self
                 self.modules[mod_key] = module
@@ -101,9 +118,7 @@ class Agent():
                 try:
                     module.stand()
                 except:
-                    self.logger.warning("Failed to stand module [{}]".format(mod_key))
-                    traceback.print_exc()
-
+                    self.logger.warning("Failed to stand module [{}]".format(mod_key), exc_info=True)
             else:
                 self.logger.warning("Module [{}] not found".format(mod_name))
         return module
@@ -176,7 +191,7 @@ class Agent():
     def ingest(self, sensor, item):
         if(item and item["value"]):
             value = item["value"]
-            self.trigger("sensor-data", value)
+            self.trigger("sensor-data", value, sensor)
 
     def on(self, event_type, event_handler):
         event_handlers = self.event_handlers.get(event_type)
@@ -185,12 +200,15 @@ class Agent():
             self.event_handlers[event_type] = event_handlers
         event_handlers.append(event_handler)
 
-    def trigger(self, event_type, event):
+    def trigger(self, event_type, event, source):
         event_handlers = self.event_handlers.get(event_type, {})
         for event_handler in event_handlers:
-            event_handler(event)
-
-        self.events_logger.debug("Event [{}] handled".format(event_type))
+            try:
+                event_handler(event, source)
+                self.events_logger.debug("Event [{}] handled successfully".format(event_type))
+            except:
+                self.logger.error("Event handler for [{}] crashed".format(event_type),exc_info=True)
+        
 
     def init_logging(self):
         FORMAT = '%(asctime)s %(levelname)s %(name)s %(message)s'

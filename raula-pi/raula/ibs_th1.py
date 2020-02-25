@@ -39,7 +39,7 @@ class IBS_TH1(Sensor):
             try:
                 self.peripheral = Peripheral()
                 self.peripheral.connect(self.addr)
-                self.info("IBS_TH1 [{}] connected to [{}]".format(self.name, self.addr))
+                self.debug("IBS_TH1 [{}] connected to [{}]".format(self.name, self.addr))
             except BTLEDisconnectError as ex:
                 self.warning("IBS_TH1 [{}] failed to connect to [{}]".format(self.name, self.addr))
                 print(ex)
