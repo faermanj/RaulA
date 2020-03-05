@@ -167,7 +167,6 @@ class Agent():
         self.config['DEFAULT'][config_key] = config_value
 
     def lookup_config(self):
-        logging.basicConfig(level=logging.DEBUG)
         raula_home = get_raula_home()
 
         self.set_default("raula_home", str(raula_home))
@@ -177,6 +176,10 @@ class Agent():
         self.set_default("running", "1")
 
         raula_ini = Path("/boot/raula.ini") 
+        
+        if not raula_ini.exists():
+            raula_ini = raula_home / "raula.ini"
+
         if (raula_ini.exists()):
             try:
                 self.config.read(str(raula_ini), encoding='utf-8-sig')
@@ -235,4 +238,3 @@ class Agent():
             logging.info("Skidding for KeyboardInterrupt")
             self.interrupt_all()
         self.logger.debug("Raula end of start()")
-

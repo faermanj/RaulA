@@ -39,17 +39,21 @@ def dump_env():
 
 def get_raula_home():
     raula_home = None
-    tmp_path = os.environ.get("TMPDIR")
-    if(tmp_path):
-        tmp_path = Path(tmp_path)
-        if(tmp_path.exists()):
-            raula_home = tmp_path
 
     if(not raula_home):
         user_home = Path.home()
         raula_home = user_home / ".raula"
+        if not raula_home.exists():
+            raula_home = None
 
-    logging.info("Starting raula home at [{}]".format(str(raula_home)))
+    if(not raula_home):
+        tmp_path = os.environ.get("TMPDIR")
+        if(tmp_path):
+            tmp_path = Path(tmp_path)
+            if(tmp_path.exists()):
+                raula_home = tmp_path
+
+    logging.info("Starting raula at [{}]".format(str(raula_home)))
     if (not raula_home.exists()):
         raula_home.mkdir(parents=True, exist_ok=True)
     return raula_home
