@@ -41,7 +41,8 @@ class Agent():
         'raula.ble': INFO,
         'raula.step': INFO,
         'raula.agent': INFO, 
-        'raula.module': INFO 
+        'raula.module': INFO,
+        'raula.utils': INFO
     }
 
     class_names = {
@@ -127,7 +128,7 @@ class Agent():
         sections = self.config.sections()
         sections_len = len(sections)
         
-        self.logger.debug("Loading [{}] configuration sections".format(sections_len))
+        self.logger.info("Loading [{}] configuration sections".format(sections_len))
         for section_name in sections:
             logging.info("Loading section [{}]".format(section_name))
             mod_name = section_name
@@ -237,4 +238,4 @@ class Agent():
         except KeyboardInterrupt:
             logging.info("Skidding for KeyboardInterrupt")
             self.interrupt_all()
-        self.logger.debug("Raula end of start()")
+        self.logger.debug("Raula end of start")
