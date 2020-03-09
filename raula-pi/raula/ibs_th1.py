@@ -7,11 +7,16 @@ import sys
 import time
 
 
+# Support for Inkbird TH1 devices
+# https://www.ink-bird.com/products-smart-sensor-ibsth1.html
+#
+# Dependencies:
+# * bluepy: https://github.com/IanHarvey/bluepy
 class IBS_TH1(Sensor):
     addr = None
     peripheral = None
     TH1_CHARACTERISTIC_HANDLE=0x002d
-    dependencies = ["bluepy"]
+
     def default_delay(self):
         return (15,180,60)
                 

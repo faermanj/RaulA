@@ -4,19 +4,17 @@ import math
 import time
 import json
 import threading
-import logging
 import argparse
-from logging import DEBUG, WARNING, INFO, ERROR
 import random
 import configparser
 import traceback
 import uuid
-
+import logging
 from pathlib import Path
-
 from .heartbeats import Heartbeats
 import importlib
 from .utils import to_json, get_raula_home, pip_probe
+from .logging import Logging
 
 
 class Agent():
@@ -25,27 +23,8 @@ class Agent():
 
     separator = "/"
     
-    levels = {
-        'botocore': INFO,
-        's3transfer': INFO,
-        'urllib3': INFO,
-        'tb_device_mqtt': WARNING,
-        'raula.events': INFO,
-        'raula.step': INFO,
-        'AWSIoTPythonSDK': WARNING,
-        'raula': DEBUG,
-        'raula.thingsboard': DEBUG,
-        'raula.heartbeats': INFO,
-        'raula.aws_iot': INFO,
-        'raula.ibs_th1': INFO,
-        'raula.ble': INFO,
-        'raula.step': INFO,
-        'raula.agent': DEBUG, 
-        'raula.module': INFO,
-        'raula.utils': INFO
-    }
-
     class_names = {
+        "logging": (".logging", "Logging"),
         "heartbeats": (".heartbeats", "Heartbeats"),
         "camera": (".camera", "Camera"),
         "sensehat": (".sensehat", "SenseHat"),
@@ -210,16 +189,7 @@ class Agent():
                 self.events_logger.debug("Event [{}] handled successfully".format(event_type))
             except:
                 self.logger.error("Event handler for [{}] crashed".format(event_type),exc_info=True)
-        
 
-    def init_logging(self):
-        FORMAT = '%(asctime)s %(levelname)s %(name)s %(message)s'
-        logging.basicConfig(format=FORMAT)
-        for pack, lvl in Agent.levels.items():
-            logger = logging.getLogger(pack)
-            logger.setLevel(lvl)
-            
-    
     def init_args(self):
         parser = argparse.ArgumentParser(description='Start the RaulA data collection agent.')
         parser.add_argument("-i", dest="interactive",action='store_true',  help="Start in interactive mode" )
@@ -227,7 +197,7 @@ class Agent():
 
     def start(self):
         self.init_args()
-        self.init_logging()
+        Logging.init_logging()
         try:
             self.lookup_config()
             self.stand_all()
