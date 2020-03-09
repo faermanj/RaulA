@@ -40,7 +40,7 @@ class Agent():
         'raula.ibs_th1': INFO,
         'raula.ble': INFO,
         'raula.step': INFO,
-        'raula.agent': INFO, 
+        'raula.agent': DEBUG, 
         'raula.module': INFO,
         'raula.utils': INFO
     }
@@ -169,27 +169,25 @@ class Agent():
 
     def lookup_config(self):
         raula_home = get_raula_home()
+        if(raula_home):
+            self.set_default("raula_home", str(raula_home))
+            self.set_default("running", "1")
 
-        self.set_default("raula_home", str(raula_home))
-        self.set_default("raula_data", str(raula_home / "data"))
-        self.set_default("raula_log",  str(raula_home / "log"))
-        self.set_default("raula_config",  str(raula_home / "config"))
-        self.set_default("running", "1")
-
-        raula_ini = Path("/boot/raula.ini") 
-        
-        if not raula_ini.exists():
             raula_ini = raula_home / "raula.ini"
+        
 
-        if (raula_ini.exists()):
-            try:
-                self.config.read(str(raula_ini), encoding='utf-8-sig')
-                self.logger.info(
-                    "Configuration lodaded [{}]".format(raula_ini))
-            except:
-                self.logger.error(
-                    "Configuration error in [{}]".format(raula_ini))
-
+            if (raula_ini.exists()):
+                try:
+                    self.config.read(str(raula_ini), encoding='utf-8-sig')
+                    self.logger.info(
+                        "Configuration lodaded [{}]".format(raula_ini))
+                except:
+                    self.logger.error(
+                        "Configuration error in [{}]".format(raula_ini))
+            else:
+                self.logger.warn("Configuration file [{}] not found.".format(raula_ini))
+        else:
+            self.logger.warn("COnfiguration dir [{}] not found.".format(raula_home))
         return self.config
 
     def ingest(self, sensor, item):

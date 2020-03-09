@@ -44,15 +44,18 @@ def get_raula_home():
 
     boot_dir = Path("/boot")
     if(boot_dir.exists()):
-        raula_home = boot_dir
+        boot_file = boot_dir / "raula.ini"
+        if (boot_file.exists()):
+            raula_home = boot_dir
 
     if(not raula_home):
         user_home = Path.home()
-        raula_home = user_home / ".raula"
-        if not raula_home.exists():   
-            utils_logger.info("Creating raula directory at [{}]".format(str(raula_home)))
-            raula_home.mkdir(parents=True, exist_ok=True)
-
+        user_raula_home = user_home / ".raula"
+        if not user_raula_home.exists():   
+            user_raula_home.info("Creating raula directory at [{}]".format(str(user_raula_home)))
+            user_raula_home.mkdir(parents=True, exist_ok=True)
+        raula_home = user_raula_home
+                
     if(not raula_home):
         tmp_path = os.environ.get("TMPDIR")
         if(tmp_path):

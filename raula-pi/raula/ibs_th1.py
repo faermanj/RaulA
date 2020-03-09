@@ -11,7 +11,7 @@ class IBS_TH1(Sensor):
     addr = None
     peripheral = None
     TH1_CHARACTERISTIC_HANDLE=0x002d
-        
+    dependencies = ["bluepy"]
     def default_delay(self):
         return (15,180,60)
                 
